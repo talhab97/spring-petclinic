@@ -1,10 +1,9 @@
-                git 'https://github.com/talhab97/spring-petclinic.git'
 pipeline {
     agent any
 
     tools {
-        maven 'Maven 3'
-        jdk 'JDK 17'
+        maven 'Maven 3'     // Set up in Jenkins → Global Tool Configuration
+        jdk 'JDK 17'        // Set up in Jenkins → Global Tool Configuration
     }
 
     environment {
@@ -13,14 +12,13 @@ pipeline {
     }
 
     stages {
-        stage('Checkout') {
+        stage('Clone') {
             steps {
-                 git branch: 'main', credentialsId: 'github-credentials', url: 'https://github.com/talhab97/spring-petclinic.git'
-
+                git url: 'git@github.com:talhab97/spring-petclinic.git', branch: 'main'
             }
         }
 
-        stage('Build App') {
+        stage('Build JAR') {
             steps {
                 sh 'mvn clean package -DskipTests'
             }
@@ -32,13 +30,16 @@ pipeline {
             }
         }
 
-        stage('Remove Old Container') {
+        stage('Stop Existing Container') {
             steps {
-                sh 'docker rm -f $CONTAINER_NAME || true'
+                sh '''
+                    docker stop $CONTAINER_NAME || true
+                    docker rm $CONTAINER_NAME || true
+                '''
             }
         }
 
-        stage('Run Docker Container') {
+        stage('Run Container') {
             steps {
                 sh 'docker run -d -p 8081:8080 --name $CONTAINER_NAME $IMAGE_NAME'
             }
